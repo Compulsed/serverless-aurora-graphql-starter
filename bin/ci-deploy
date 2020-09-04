@@ -1,0 +1,81 @@
+#!/bin/bash
+set -euo pipefail
+
+STAGE=""
+
+usage="USAGE: $(basename "$0") [-s|--stage] <stage>
+where:
+    -s | --stage        stage for deployment (required)
+    -h | --help         show this help text"
+
+while [ $# -gt 0 ]; do
+    if [[ $1 =~ "--"* ]]; then
+        case $1 in
+            --help|-h) echo "$usage"; exit; ;;
+            --stage|-s) STAGE=$2;;
+        esac
+    fi
+    shift
+done
+
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Error Handler
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+cleanup() {
+  echo "Running clean up"
+
+  echo "START: Remote Stop"
+  ./bin/remote-stop -s "$STAGE"
+  echo "DONE: Remote Stop"
+}
+trap cleanup 0
+
+error() {
+  local parent_lineno="$1"
+  local message="$2"
+  local code="${3:-1}"
+  if [[ -n "$message" ]] ; then
+    echo "Error on or near line ${parent_lineno}: ${message}; exiting with status ${code}"
+  else
+    echo "Error on or near line ${parent_lineno}; exiting with status ${code}"
+  fi
+  exit "${code}"
+}
+
+trap 'error ${LINENO}' ERR
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Integration Test
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
+echo "STAR: Oprah Run"
+yarn oprah run -s "$STAGE"
+echo "END: Oprah Run"
+
+echo "STAR: Running Deploy"
+./bin/stack-deploy -s "$STAGE"
+echo "END: Running Deploy"
+
+echo "START: Setting up remote database connection"
+./bin/remote-start -s "$STAGE"
+echo "END: Setting up remote database connection"
+
+echo "START: Running Migration"
+yarn knex migrate:latest --env "$STAGE"
+echo "END: Running Migration"
+
+if [ "$STAGE" == "production" ]; then
+  echo "Production, skipping seed"
+else
+  echo "START: Running Seed"
+  yarn knex seed:run --env "$STAGE"
+  echo "END: Running Seed"
+fi
+
+
+echo "🎉 Done! 🎉"

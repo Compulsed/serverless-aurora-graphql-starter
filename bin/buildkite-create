@@ -1,0 +1,131 @@
+#!/bin/bash
+set -euo pipefail
+
+function merge_pipeline() {
+  local pipeline="serverless-aurora-graphql-starter-merge"
+  local command="buildkite-agent pipeline upload ./backend/.buildkite/merge.yml"
+  local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
+  local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
+
+  echo "Merge pipeline: $pipeline ..."
+
+  curl -X "$method" "https://api.buildkite.com/v2/organizations/dale-salter/$urlPrefix" \
+  -H "Authorization: Bearer $BUILDKITE_TOKEN" \
+  -d '{
+    "name": "'"$pipeline"'",
+    "repository": "'"$REPO"'",
+    "steps": [
+      {
+        "type": "script",
+        "name": ":buildkite:",
+        "command": "'"$command"'"
+      }
+    ],
+    "default_branch": "master",
+    "branch_configuration": "master",
+    "provider_settings": {
+      "trigger_mode": "code",
+      "build_pull_requests": false,
+      "publish_commit_status": true,
+      "publish_commit_status_per_step": true
+    }
+  }' | jq
+}
+
+function deploy_pipeline() {
+  local pipeline="serverless-aurora-graphql-starter-deploy"
+  local command="buildkite-agent pipeline upload ./backend/.buildkite/deploy.yml"
+  local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
+  local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
+
+  echo "Meploy pipeline: $pipeline ..."
+
+  curl -X "$method" "https://api.buildkite.com/v2/organizations/dale-salter/$urlPrefix" \
+  -H "Authorization: Bearer $BUILDKITE_TOKEN" \
+  -d '{
+    "name": "'"$pipeline"'",
+    "repository": "'"$REPO"'",
+    "steps": [
+      {
+        "type": "script",
+        "name": ":buildkite:",
+        "command": "'"$command"'"
+      }
+    ],
+    "default_branch": "master",
+    "provider_settings": {
+      "trigger_mode": "none"
+    }
+  }' | jq
+}
+
+function pr_pipeline() {
+  local pipeline="serverless-aurora-graphql-starter-pr"
+  local command="buildkite-agent pipeline upload ./backend/.buildkite/pr.yml"
+  local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
+  local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
+
+  echo "Pipeline: $pipeline ..."
+
+  curl -X "$method" "https://api.buildkite.com/v2/organizations/dale-salter/$urlPrefix" \
+  -H "Authorization: Bearer $BUILDKITE_TOKEN" \
+  -d '{
+    "name": "'"$pipeline"'",
+    "repository": "'"$REPO"'",
+    "steps": [
+      {
+        "type": "script",
+        "name": ":buildkite:",
+        "command": "'"$command"'"
+      }
+    ],
+    "default_branch": "",
+    "cancel_running_branch_builds": true,
+    "branch_configuration": "!master",
+    "provider_settings": {
+      "trigger_mode": "code",
+      "pull_request_branch_filter_enabled": true,
+      "pull_request_branch_filter_configuration": "!master",
+      "publish_blocked_as_pending": true,
+      "separate_pull_request_statuses": true,
+      "publish_commit_status": true,
+      "publish_commit_status_per_step": true
+    }
+  }' | jq
+}
+
+SERVICE="serverless-aurora-graphql-starter"
+REPO=""
+BUILDKITE_TOKEN=""
+ACTION=""
+
+usage="USAGE: $(basename "$0")
+where:
+    -a | --ACTION       'create' or 'update' (required)
+    -t | --token        buildkite token (required) 
+    -r | --REPO         git repository (required) eg. git@github.com:Compulsed/serverless-aurora-graphql-starter.git
+    -h | --help         show this help text"
+
+while [ $# -gt 0 ]; do
+    if [[ $1 =~ "--"* ]]; then
+        case $1 in
+            --help|-h) echo "$usage"; exit; ;;
+            --REPO|-r) REPO=$2;;
+            --token|-t) BUILDKITE_TOKEN=$2;;
+            --action|-a) ACTION=$2;;
+        esac
+    fi
+    shift
+done
+
+echo "🔧 Starting pipeline action"
+merge_pipeline
+deploy_pipeline
+pr_pipeline
+echo "🎉 Done action"
+
+if [[ $ACTION == "create" ]]; then
+    echo "Next steps - Integrate the Web Hook into the Merge and PR pipelines"
+    echo "- https://buildkite.com/dale-salter/serverless-aurora-graphql-starter-merge/settings/setup/github"
+    echo "- https://buildkite.com/dale-salter/serverless-aurora-graphql-starter-pr/settings/setup/github"
+fi

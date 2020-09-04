@@ -1,0 +1,103 @@
+#!/bin/bash
+set -euo pipefail
+
+STAGE=""
+TEST_STAGE=""
+
+usage="USAGE: $(basename "$0") [-s|--stage] <stage>
+where:
+    -s | --stage        stage for deployment (required)
+    -h | --help         show this help text"
+
+while [ $# -gt 0 ]; do
+    if [[ $1 =~ "--"* ]]; then
+        case $1 in
+            --help|-h) echo "$usage"; exit; ;;
+            --stage|-s) STAGE=$2;;
+        esac
+    fi
+    shift
+done
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Error Handler
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+cleanup() {
+  echo "Running clean up"
+
+  echo "START: Remote Stop"
+  ./bin/remote-stop -s "$TEST_STAGE"
+  echo "DONE: Remote Stop"
+
+  echo "START: Stack Delete"
+  ./bin/stack-delete -s "$TEST_STAGE"
+  echo "DONE: Stack Delete"
+
+  # TODO: Oprah value delete
+  echo "START: Oprah Delete"
+  # HACK: AWS_PAGER="" -- Container does not have 'less'
+  cat "/tmp/oprah-exports.json" | jq ".configs | keys[]" | xargs -I % sh -c "AWS_PAGER="" aws ssm delete-parameter --name /$TEST_STAGE/serverless-aurora-graphql-starter/config/%";
+  cat "/tmp/oprah-exports.json" | jq ".secrets | keys[]" | xargs -I % sh -c "AWS_PAGER="" aws ssm delete-parameter --name /$TEST_STAGE/serverless-aurora-graphql-starter/secret/%";
+  echo "Done: Oprah Delete"
+}
+trap cleanup 0
+
+error() {
+  local parent_lineno="$1"
+  local message="$2"
+  local code="${3:-1}"
+  if [[ -n "$message" ]] ; then
+    echo "Error on or near line ${parent_lineno}: ${message}; exiting with status ${code}"
+  else
+    echo "Error on or near line ${parent_lineno}; exiting with status ${code}"
+  fi
+  exit "${code}"
+}
+
+trap 'error ${LINENO}' ERR
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Integration Test
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
+yarn oprah export -s "$STAGE"
+
+TEST_STAGE="$STAGE-$BUILDKITE_BUILD_NUMBER"
+TEST_STACK="serverless-aurora-graphql-starter-$TEST_STAGE"
+
+yarn oprah import -s "$TEST_STAGE"
+
+echo "START: Running Deploy"
+./bin/stack-deploy -s "$TEST_STAGE"
+echo "END: Running Deploy"
+
+echo "START: Setting up remote database connection"
+./bin/remote-start -s "$TEST_STAGE"
+echo "END: Setting up remote database connection"
+
+echo "START: Running Migration"
+STAGE=$TEST_STAGE yarn knex migrate:latest --env "$TEST_STAGE"
+echo "END: Running Migration"
+
+echo "START: Running Seeding"
+STAGE=$TEST_STAGE yarn knex seed:run
+echo "END: Running Seeding"
+
+echo "START: Backfill"
+yarn sls invoke local -f pipelines -s "$TEST_STAGE" --data "{}"
+echo "END: Backfill"
+
+echo "START: Running API Test"
+GRAPHQL_URL=$(aws cloudformation describe-stacks --stack-name "$TEST_STACK" --query "Stacks[0].Outputs[?OutputKey=='GraphQLUrl'].OutputValue" --output text)
+
+curl --request POST \
+  --url "$GRAPHQL_URL" \
+  --header 'content-type: application/json' \
+  --data '{"query":"query {\n  users {\n    email\n    first_name\n    last_name\n  }\n}"}'
+echo "END: Running API Test"
+
+echo "🎉 Done! 🎉"

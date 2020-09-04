@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -euo pipefail
+
+CURRENT_AWS_ROLE="$(aws sts get-caller-identity)"
+AWS_ACCOUNT_ID=$(echo "$CURRENT_AWS_ROLE" | jq -r '.Account')
+
+if [ -z "${AWS_ACCOUNT_ID}" ]; then
+  echo "Could not read determine AWS account id.";
+  exit 1;
+fi
+
+echo "Initiating script with: ${CURRENT_AWS_ROLE}"
+echo "AWS Account ID: $AWS_ACCOUNT_ID"
+
+STAGE=$(buildkite-agent meta-data get stage)
+
+if [ -z "${STAGE}" ]; then
+  echo "Could not read stage";
+  exit 1;
+fi
+
+echo "Running migrate on ${STAGE}"
+export AWS_ACCOUNT_ID
+yarn sls invoke local -f pipelines -s "${STAGE}"

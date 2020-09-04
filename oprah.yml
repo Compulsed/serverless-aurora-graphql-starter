@@ -1,0 +1,16 @@
+service: serverless-aurora-graphql-starter
+provider:
+  name: ssm
+
+config:
+  path: /${stage}/serverless-aurora-graphql-starter/config
+
+  production:
+    AURORA_AUTO_PAUSE: "false"
+
+  defaults:
+    AURORA_AUTO_PAUSE: "true"
+    DATABASE_NAME: "serverless-aurora-graphql-starter"
+
+  required:
+    FRONTEND_AUTH_SECRET: "Any string which you should enter in the /login/x to auth with backend"

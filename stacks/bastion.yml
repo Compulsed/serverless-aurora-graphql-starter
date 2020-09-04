@@ -1,0 +1,133 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  LatestAmiId:
+    Type: "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+    Default: "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2"
+  
+  ServiceStackName:
+    Type: String
+
+Resources:
+  EC2SSHPrivateKey:
+    Type: Custom::RSAKey
+    Properties:
+      Name: !Sub '/${AWS::StackName}/rsa-key' # SSM Path Name
+      Version: v1
+      NoEcho: False
+      ServiceToken: 
+        Fn::ImportValue: !Sub '${AWS::StackName}-ec2key-function'
+  
+  EC2SSHKeyPair:
+    Type: Custom::KeyPair
+    DependsOn:
+      - EC2SSHPrivateKey
+    Properties:
+      Name: !Sub '${AWS::StackName}-custom-key-pair' # Name of the EC2 key SSH key in the console
+      NoEcho: False
+      PublicKeyMaterial: !GetAtt 'EC2SSHPrivateKey.PublicKey'
+      ServiceToken: 
+        Fn::ImportValue: !Sub '${AWS::StackName}-ec2key-function'
+
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Security Group Description"
+      SecurityGroupEgress:
+        - 
+          CidrIp: 0.0.0.0/0
+          FromPort: -1
+          ToPort: -1
+          IpProtocol: "-1"
+        - 
+          DestinationSecurityGroupId:
+            Fn::ImportValue: !Sub '${ServiceStackName}-databaseVPCSecurityGroupId'
+          IpProtocol: tcp
+          FromPort:
+            Fn::ImportValue: !Sub '${ServiceStackName}-databasePort'
+          ToPort:
+            Fn::ImportValue: !Sub '${ServiceStackName}-databasePort'
+      SecurityGroupIngress: # TODO: Change this, it is not secure (Should only need Port 22)
+        - CidrIp: 0.0.0.0/0
+          FromPort: -1
+          ToPort: -1
+          IpProtocol: "-1"
+      VpcId:
+        Fn::ImportValue: !Sub '${ServiceStackName}-vpcId'
+
+  Bastion:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT10M
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          services:
+            sysvinit:
+              sshd:
+                enabled: true
+                ensureRunning: true
+    Properties:
+      DisableApiTermination: false
+      ImageId: !Ref LatestAmiId
+      InstanceType: t2.nano
+      KeyName: !GetAtt 'EC2SSHKeyPair.Name'
+      Monitoring: false
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -ex
+          trap '/opt/aws/bin/cfn-signal --exit-code 1 --resource Bastion --region ${AWS::Region} --stack ${AWS::StackName}' ERR
+          /opt/aws/bin/cfn-init -v --resource Bastion --stack ${AWS::StackName} --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal --exit-code 0 --resource Bastion --stack ${AWS::StackName} --region ${AWS::Region}
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - Fn::ImportValue: !Sub '${ServiceStackName}-databaseVPCSecurityGroup'
+            - !Ref "BastionSecurityGroup"
+          SubnetId:
+            Fn::ImportValue: !Sub '${ServiceStackName}-publicSubnet0'
+  
+Outputs:
+  BastionPublicDnsName:
+    Value: !GetAtt "Bastion.PublicDnsName"
+    Export:
+      Name: !Sub '${AWS::StackName}-publicDnsName'
+
+  DatabaseHostName:
+    Value:
+      Fn::ImportValue: !Sub '${ServiceStackName}-databaseHostName'
+    Export:
+      Name: !Sub '${AWS::StackName}-databaseHostName'
+
+  DatabasePort:
+    Value:
+      Fn::ImportValue: !Sub '${ServiceStackName}-databasePort'
+    Export:
+      Name: !Sub '${AWS::StackName}-databasePort'
+
+  DatabaseName:
+    Value:
+      Fn::ImportValue: !Sub '${ServiceStackName}-databaseName'
+    Export:
+      Name: !Sub '${AWS::StackName}-databaseName'
+
+  DatabaseSecretArn:
+    Value:
+      Fn::ImportValue: !Sub '${ServiceStackName}-databaseSecretArn'
+    Export:
+      Name: !Sub '${AWS::StackName}-databaseSecretArn'
+
+  EC2SSHKeyPairName:
+    Value:
+      !GetAtt EC2SSHKeyPair.Name
+    Export:
+      Name: !Sub '${AWS::StackName}-EC2SSHKeyPairName'
+
+  EC2SSHPrivateKeyArn:
+    Value:
+      !GetAtt EC2SSHPrivateKey.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-EC2SSHPrivateKeyName'

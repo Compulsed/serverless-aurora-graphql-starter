@@ -1,0 +1,22 @@
+#!/bin/bash
+set -euo pipefail
+
+STAGE=""
+
+usage="USAGE: $(basename "$0") [-s|--stage] <stage>
+where:
+    -s | --stage        stage for deployment (required)
+    -h | --help         show this help text"
+
+while [ $# -gt 0 ]; do
+    if [[ $1 =~ "--"* ]]; then
+        case $1 in
+            --help|-h) echo "$usage"; exit; ;;
+            --stage|-s) STAGE=$2;;
+        esac
+    fi
+    shift
+done
+
+echo "Running serverless offline for stage: $STAGE"
+./node_modules/.bin/sls offline --stage "$STAGE" --region "$AWS_REGION"

@@ -1,0 +1,446 @@
+service:
+  name: serverless-aurora-graphql-starter
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stackName: ${self:service}-${self:provider.stage}
+  stage: ${opt:stage}
+  configPath: ${opt:stage}/serverless-aurora-graphql-starter/config
+  secretPath: ${opt:stage}/serverless-aurora-graphql-starter/secret
+  region: ${env:AWS_REGION}
+  iamRoleStatements:
+    - Sid: 'SecretsManagerDbCredentialsAccess'
+      Effect: 'Allow'
+      Action:
+        - 'secretsmanager:GetSecretValue'
+      Resource:
+        !Ref DatabaseSecret
+    - Sid: 'RDSDataServiceAccess'
+      Effect: 'Allow'
+      Action: 
+        - 'rds-data:BatchExecuteStatement'
+        - 'rds-data:BeginTransaction'
+        - 'rds-data:CommitTransaction'
+        - 'rds-data:ExecuteStatement'
+        - 'rds-data:RollbackTransaction'
+      Resource: '*'
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+      Resource: arn:aws:s3:::${self:custom.S3.imageBucketName}*
+
+  environment:
+    STACK_NAME: ${self:provider.stackName}
+
+  apiGateway:
+    restApiId:
+      Ref: ApiGatewayRestApi
+    restApiResources:
+      Fn::GetAtt:
+        - ApiGatewayRestApi
+        - RootResourceId
+  tracing:
+    lambda: true # Optional, can be true (true equals 'Active'), 'Active' or 'PassThrough'
+
+custom:
+  RDS:
+    clusterIdentifierName: ${self:provider.stackName}-aurora-cluster
+    clusterDatabaseSecretName: ${self:custom.RDS.clusterIdentifierName}-secret
+    databaseName: ${self:service} # rds requires alphanumeric database names
+    databaseUser: ${self:service}
+  GraphQL:
+    path: "/graphql"
+  Network:
+    VpcCIDR: "10.192.0.0/16"
+    PublicSubnet0CIDR: "10.192.10.0/24"
+    PublicSubnet1CIDR: "10.192.11.0/24"
+    PublicSubnet2CIDR: "10.192.12.0/24"
+    PublicSubnet3CIDR: "10.192.13.0/24"
+    PublicSubnet4CIDR: "10.192.14.0/24"
+    PublicSubnet5CIDR: "10.192.15.0/24"
+  S3:
+    imageBucketName: ${self:provider.stackName}-image-bucket
+
+plugins:
+  - serverless-offline
+
+functions:
+  graphql:
+    handler: src/handler.handler
+    timeout: 30
+    events:
+      - http:
+          path: ${self:custom.GraphQL.path}
+          method: post
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
+            maxAge: 86400
+
+    environment:
+      SECRET_ARN_REF: !Ref DatabaseSecret
+      DB_ARN: arn:aws:rds:${self:provider.region}:${env:AWS_ACCOUNT_ID}:cluster:${self:custom.RDS.clusterIdentifierName}
+      DATABASE_NAME: ${self:custom.RDS.databaseName}
+      DATABASE_USER: ${self:custom.RDS.databaseUser}
+      DATABASE_HOSTNAME: !GetAtt "DatabaseCluster.Endpoint.Address" # not used - but for waiting until DB is done
+      DATABASE_PORT: !GetAtt "DatabaseCluster.Endpoint.Port"        # not used - but for waiting until DB is done
+      FRONTEND_AUTH_SECRET: ${ssm:/${self:provider.configPath}/FRONTEND_AUTH_SECRET }
+      IMAGE_BUCKET_NAME: ${self:custom.S3.imageBucketName}
+
+package:
+  include:
+    - src/
+    - node_modules/
+
+resources:
+  Resources:
+    ApiGatewayRestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: ${self:provider.stackName}-api
+
+    DatabaseSecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: ${self:custom.RDS.clusterDatabaseSecretName}
+        Description: "Used to access aurora serverless instance"
+        GenerateSecretString:
+          SecretStringTemplate: '{"username": "${self:custom.RDS.databaseUser}"}'
+          GenerateStringKey: "password"
+          PasswordLength: 16
+          ExcludeCharacters: '"@/'
+
+    DatabaseCluster:
+      Type: AWS::RDS::DBCluster
+      DeletionPolicy: Delete # Change for production
+      Properties:
+        DatabaseName: ${self:custom.RDS.databaseName}
+        MasterUsername:
+          Fn::Join:
+            [
+              "",
+              [
+                "{{resolve:secretsmanager:",
+                { Ref: DatabaseSecret },
+                ":SecretString:username}}",
+              ],
+            ]
+        MasterUserPassword:
+          Fn::Join:
+            [
+              "",
+              [
+                "{{resolve:secretsmanager:",
+                { Ref: DatabaseSecret },
+                ":SecretString:password}}",
+              ],
+            ]
+        DBClusterIdentifier: ${self:custom.RDS.clusterIdentifierName}
+        Engine: aurora-postgresql
+        EngineMode: serverless
+        EnableHttpEndpoint: true # DataAPI - https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/data-api.html
+        ScalingConfiguration:
+          AutoPause: ${ssm:/${self:provider.configPath}/AURORA_AUTO_PAUSE }
+          MaxCapacity: 2
+          MinCapacity: 2
+          SecondsUntilAutoPause: 300
+        DBSubnetGroupName: !Ref "MyDBSubnetGroup"
+        VpcSecurityGroupIds: # DBSecurityGroups vs VPCSecurityGroups vs VpcSecurityGroupIds
+          - !GetAtt DatabaseVPCSecurityGroup.GroupId
+
+    SecretRDSInstanceAttachment:
+      Type: AWS::SecretsManager::SecretTargetAttachment
+      Properties:
+        SecretId: { Ref: DatabaseSecret }
+        TargetId: { Ref: DatabaseCluster }
+        TargetType: AWS::RDS::DBCluster
+
+    ################
+    # Image Storage
+    ################
+    ImageBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.S3.imageBucketName}
+        AccelerateConfiguration:
+          AccelerationStatus: Enabled
+        AccessControl: PublicRead
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders: ['*']
+              AllowedMethods: ['PUT']
+              AllowedOrigins: ['*']
+
+    ImageBucketBucketPolicy: 
+      Type: AWS::S3::BucketPolicy
+      Properties: 
+        Bucket: { Ref: ImageBucket }
+        PolicyDocument: 
+          Statement: 
+            - 
+              Action: 
+                - "s3:GetObject"
+              Effect: "Allow"
+              Resource: 
+                Fn::Join: 
+                  - ""
+                  - 
+                    - "arn:aws:s3:::"
+                    - 
+                      { Ref: ImageBucket }
+                    - "/*"
+              Principal: "*"
+
+    ################
+    # Networking
+    ################
+    VPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: ${self:custom.Network.VpcCIDR}
+        EnableDnsSupport: true
+        EnableDnsHostnames: true
+        Tags:
+          - Key: Name
+            Value: ${self:provider.stackName}
+
+    DatabaseVPCSecurityGroup:
+      Type: AWS::EC2::SecurityGroup
+      Properties:
+        VpcId: { Ref: VPC }
+        GroupDescription: "Ingress for Amazon EC2 security group"
+
+        # Change this, it is not secure, might only need Bastion hosts'
+        SecurityGroupIngress:
+          - IpProtocol: "tcp"
+            CidrIp: "0.0.0.0/0" # FIX THIS
+            FromPort: 5432
+            ToPort: 5432
+
+    InternetGateway:
+      Type: AWS::EC2::InternetGateway
+      Properties:
+        Tags:
+          - Key: Name
+            Value: ${self:provider.stackName}
+
+    InternetGatewayAttachment:
+      Type: AWS::EC2::VPCGatewayAttachment
+      Properties:
+        InternetGatewayId: { Ref: InternetGateway }
+        VpcId: { Ref: VPC }
+
+    MyDBSubnetGroup:
+      Type: AWS::RDS::DBSubnetGroup
+      DependsOn: # Consider if this is actually needed
+        - PublicSubnet0RouteTableAssociation
+        - PublicSubnet1RouteTableAssociation
+        - PublicSubnet2RouteTableAssociation
+        - PublicSubnet3RouteTableAssociation
+        - PublicSubnet4RouteTableAssociation
+      Properties:
+        DBSubnetGroupDescription: DBSubnetGroupDescription
+        SubnetIds:
+          - { Ref: PublicSubnet0 }
+          - { Ref: PublicSubnet1 }
+          - { Ref: PublicSubnet2 }
+          - { Ref: PublicSubnet3 }
+          - { Ref: PublicSubnet4 }
+          - { Ref: PublicSubnet5 }
+
+    PublicSubnet0:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: { Ref: VPC }
+        AvailabilityZone: !Select [0, !GetAZs ""]
+        CidrBlock: ${self:custom.Network.PublicSubnet0CIDR}
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: Name
+            Value: "${self:provider.stackName} Public Subnet (AZ0)"
+
+    PublicSubnet1:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: { Ref: VPC }
+        AvailabilityZone: !Select [1, !GetAZs ""]
+        CidrBlock: ${self:custom.Network.PublicSubnet1CIDR}
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: Name
+            Value: "${self:provider.stackName} Public Subnet (AZ1)"
+
+    PublicSubnet2:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: { Ref: VPC }
+        AvailabilityZone: !Select [2, !GetAZs ""]
+        CidrBlock: ${self:custom.Network.PublicSubnet2CIDR}
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: Name
+            Value: "${self:provider.stackName} Public Subnet (AZ2)"
+
+    PublicSubnet3:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: { Ref: VPC }
+        AvailabilityZone: !Select [3, !GetAZs ""]
+        CidrBlock: ${self:custom.Network.PublicSubnet3CIDR}
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: Name
+            Value: "${self:provider.stackName} Public Subnet (AZ3)"
+
+    PublicSubnet4:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: { Ref: VPC }
+        AvailabilityZone: !Select [4, !GetAZs ""]
+        CidrBlock: ${self:custom.Network.PublicSubnet4CIDR}
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: Name
+            Value: "${self:provider.stackName} Public Subnet (AZ4)"
+
+    PublicSubnet5:
+      Type: AWS::EC2::Subnet
+      Properties:
+        VpcId: { Ref: VPC }
+        AvailabilityZone: !Select [5, !GetAZs ""]
+        CidrBlock: ${self:custom.Network.PublicSubnet5CIDR}
+        MapPublicIpOnLaunch: true
+        Tags:
+          - Key: Name
+            Value: "${self:provider.stackName} Public Subnet (AZ5)"
+
+    PublicRouteTable:
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId: { Ref: VPC }
+        Tags:
+          - Key: Name
+            Value: "${self:provider.stackName} Public Routes"
+
+    DefaultPublicRoute:
+      Type: AWS::EC2::Route
+      DependsOn: InternetGatewayAttachment
+      Properties:
+        RouteTableId: { Ref: PublicRouteTable }
+        DestinationCidrBlock: 0.0.0.0/0
+        GatewayId: { Ref: InternetGateway }
+
+    PublicSubnet0RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: { Ref: PublicRouteTable }
+        SubnetId: { Ref: PublicSubnet0 }
+
+    PublicSubnet1RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: { Ref: PublicRouteTable }
+        SubnetId: { Ref: PublicSubnet1 }
+
+    PublicSubnet2RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: { Ref: PublicRouteTable }
+        SubnetId: { Ref: PublicSubnet2 }
+
+    PublicSubnet3RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: { Ref: PublicRouteTable }
+        SubnetId: { Ref: PublicSubnet3 }
+
+    PublicSubnet4RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: { Ref: PublicRouteTable }
+        SubnetId: { Ref: PublicSubnet4 }
+
+    PublicSubnet5RouteTableAssociation:
+      Type: AWS::EC2::SubnetRouteTableAssociation
+      Properties:
+        RouteTableId: { Ref: PublicRouteTable }
+        SubnetId: { Ref: PublicSubnet5 }
+
+  ################
+  # Outputs
+  ################
+
+  Outputs:
+    GraphQLUrl:
+      Value: # Replace with Sub?
+        Fn::Join:
+          - ""
+          - - "https://"
+            - Ref: "ApiGatewayRestApi"
+            - ".execute-api."
+            - ${self:provider.region}.
+            - Ref: "AWS::URLSuffix"
+            - "/"
+            - ${self:provider.stage}
+            - ${self:custom.GraphQL.path}
+      Export:
+        Name: ${self:provider.stackName}-graphQLUrl
+
+    DatabaseClusterIdentifierName:
+      Value: !Ref DatabaseCluster
+      Export:
+        Name: ${self:provider.stackName}-databaseClusterIdentifierName
+
+    DatabaseName:
+      Value: ${self:custom.RDS.databaseName}
+      Export:
+        Name: ${self:provider.stackName}-databaseName
+
+    DatabaseSecretArn:
+      Value: !Ref DatabaseSecret
+      Export:
+        Name: ${self:provider.stackName}-databaseSecretArn
+
+    DatabaseHostName:
+      Description: "The connection endpoint for the DB cluster."
+      Value: !GetAtt "DatabaseCluster.Endpoint.Address"
+      Export:
+        Name: ${self:provider.stackName}-databaseHostName
+
+    DatabasePort:
+      Description: "The connection endpoint for the DB cluster."
+      Value: !GetAtt "DatabaseCluster.Endpoint.Port"
+      Export:
+        Name: ${self:provider.stackName}-databasePort
+
+    VpcId:
+      Description: "VpcId"
+      Value: !Ref VPC
+      Export:
+        Name: ${self:provider.stackName}-vpcId
+
+    PublicSubnet0:
+      Description: "PublicSubnet0"
+      Value: !Ref PublicSubnet0
+      Export:
+        Name: ${self:provider.stackName}-publicSubnet0
+
+    DatabaseVPCSecurityGroup:
+      Description: "DatabaseVPCSecurityGroup"
+      Value: !Ref DatabaseVPCSecurityGroup
+      Export:
+        Name: ${self:provider.stackName}-databaseVPCSecurityGroup
+
+    DatabaseVPCSecurityGroupId:
+      Description: "DatabaseVPCSecurityGroupId"
+      Value: !GetAtt DatabaseVPCSecurityGroup.GroupId
+      Export:
+        Name: ${self:provider.stackName}-databaseVPCSecurityGroupId

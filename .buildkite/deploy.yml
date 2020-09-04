@@ -1,0 +1,21 @@
+steps:
+  - label: "Deploying backend to ${STAGE}"
+    command: "./bin/ci-deploy -s ${STAGE}"
+    agents:
+      queue: default
+    concurrency: 1
+    concurrency_group: "serverless-aurora-graphql-starter-deploy-${STAGE}"
+    plugins:
+      - cultureamp/aws-assume-role#v0.1.0:
+          role: "$ROLE_ARN"
+      - docker-compose#v3.1.0:
+          run: backend
+          env:
+            - AWS_ACCESS_KEY_ID
+            - AWS_SECRET_ACCESS_KEY
+            - AWS_SESSION_TOKEN
+            - AWS_REGION
+            - AWS_DEFAULT_REGION
+            - AWS_ACCOUNT_ID
+            - STAGE
+            - ROLE_ARN

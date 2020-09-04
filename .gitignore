@@ -1,0 +1,7 @@
+node_modules/
+.serverless
+.env*
+vscode-workspace.code-workspace
+*.pem
+.secrets/
+.vercel

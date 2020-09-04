@@ -1,0 +1,31 @@
+{
+  "name": "ws",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "apollo": "^2.13.0",
+    "apollo-server-lambda": "^2.14.2",
+    "data-api-client": "^1.0.1",
+    "graphql-request": "^1.8.2",
+    "graphql-tag": "^2.10.3",
+    "knex": "^0.21.1",
+    "lodash": "^4.17.20",
+    "pg": "^8.0.3",
+    "uuid": "^8.0.0",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.395.0",
+    "faker": "^4.1.0",
+    "oprah": "^3.0.1",
+    "serverless": "^1.45.0",
+    "serverless-offline": "^4.9.4"
+  },
+  "scripts": {
+    "dev": "sls offline --stage dev",
+    "deploy-production": "npm install && /bin/bash ./bin/permissions && ./bin/deploy --stage production",
+    "deploy-test": "npm install && /bin/bash ./bin/permissions && ./bin/deploy --stage test",
+    "deploy-dev": "npm install && /bin/bash ./bin/permissions && ./bin/deploy --stage dev"
+  }
+}

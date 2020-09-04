@@ -1,0 +1,129 @@
+#!/bin/bash
+set -euo pipefail
+
+STAGE=""
+
+usage="USAGE: $(basename "$0") [-s|--stage] <stage>
+where:
+    -s | --stage        stage for deployment (required)
+    -h | --help         show this help text"
+
+while [ $# -gt 0 ]; do
+    if [[ $1 =~ "--"* ]]; then
+        case $1 in
+            --help|-h) echo "$usage"; exit; ;;
+            --stage|-s) STAGE=$2;;
+        esac
+    fi
+    shift
+done
+
+if [ -z "${STAGE}" ]; then
+      echo "Missing stage";
+      exit 1;
+fi
+
+SERVICE_STACK_STACK="serverless-aurora-graphql-starter-$STAGE"
+BASTION_EC2_KEY_STACK="$SERVICE_STACK_STACK-bastion-ec2key"
+BASTION_STACK="$SERVICE_STACK_STACK-bastion"
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Bastion EC2 Key
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+echo "START: Create Bastion EC2 Key Stack"
+# HACK: AWS_PAGER="" -- Container does not have 'less'
+AWS_PAGER="" aws cloudformation deploy \
+    --template-file "./stacks/bastion-ec2key.yml" \
+    --stack-name "$BASTION_EC2_KEY_STACK" \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --no-fail-on-empty-changeset
+echo "DONE: Create Bastion EC2 Key Stack"
+
+echo "START: wait stack-create-complete"
+aws cloudformation wait stack-create-complete --stack "$BASTION_EC2_KEY_STACK"
+echo "DONE: wait stack-create-complete"
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Bastion Host
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+echo "START: Create Bastion Stack"
+# HACK: AWS_PAGER="" -- Container does not have 'less'
+AWS_PAGER="" aws cloudformation deploy \
+    --template-file "./stacks/bastion.yml" \
+    --stack-name "$BASTION_STACK" \
+    --parameter-overrides "ServiceStackName=$SERVICE_STACK_STACK" \
+    --no-fail-on-empty-changeset
+echo "DONE: Create Bastion Stack"
+
+echo "START: wait stack-create-complete"
+aws cloudformation wait stack-create-complete --stack "$BASTION_STACK"
+echo "DONE: wait stack-create-complete"
+
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: SSH Key
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
+echo "START: Key download"
+EC2_SSH_PRIVATE_KEY_ARN=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='EC2SSHPrivateKeyArn'].OutputValue" --output text)
+EC2_SSH_PRIVATE_KEY_PATH="/${EC2_SSH_PRIVATE_KEY_ARN#*\/}"
+
+rm -rf "./key.pem" && AWS_PAGER="" aws ssm get-parameter \
+    --with-decryption \
+    --name "${EC2_SSH_PRIVATE_KEY_PATH}" \
+    | jq --raw-output .Parameter.Value > "./key.pem"
+
+chmod 0400 "./key.pem"
+echo "DONE: Key download"
+
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: SSH Tunnel
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
+BASTION_PUBLIC_DNS_NAME=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='BastionPublicDnsName'].OutputValue" --output text)
+DATABASE_HOST_NAME=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='DatabaseHostName'].OutputValue" --output text)
+DATABASE_PORT=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='DatabasePort'].OutputValue" --output text)
+DATABASE_SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='DatabaseSecretArn'].OutputValue" --output text)
+DATABASE_SECRET=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_SECRET_ARN" | jq --raw-output .SecretString | jq -r ."password" )
+DATABASE_USERNAME=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_SECRET_ARN" | jq --raw-output .SecretString | jq -r ."username" )
+DATABASE_DATABASE_NAME=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_SECRET_ARN" | jq --raw-output .SecretString | jq -r ."dbname" )
+
+echo "START: SSH Tunnel"
+# Do I need to clean this up
+# HACK: -o trusts that the EC2 instance is not MTM
+# -4 IPV4
+nohup ssh -i "./key.pem" \
+    -4 \
+    -o "StrictHostKeyChecking=no" \
+    -N -L \
+    "5433:$DATABASE_HOST_NAME:$DATABASE_PORT" \
+    "ec2-user@$BASTION_PUBLIC_DNS_NAME" > /dev/null 2> /dev/null < /dev/null &
+sleep 5 # HACK: Sleep 5 seconds to that it can connect before moving into next query
+rm -rf "./key.pem"
+echo "DONE: SSH Tunnel"
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Query Warmer
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
+# # HACK: Is required so that other querys that follow this command have a warm SQL instance to avoid timeouts
+# #   https://github.com/knex/knex/issues/2820
+echo "START: Running warming query"
+PGPASSWORD="$DATABASE_SECRET" \
+    psql -U "$DATABASE_USERNAME" \
+    -d "$DATABASE_DATABASE_NAME" \
+    -p "5433" \
+    -h localhost \
+    -c 'SELECT * FROM pg_catalog.pg_tables' >/dev/null || true # HACK: Sometimes can timeout, though warms the instance regardless
+echo "DONE: Running warming query"

@@ -1,0 +1,31 @@
+#!/bin/bash
+set -euo pipefail
+
+STAGE=""
+
+usage="USAGE: $(basename "$0") [-s|--stage] <stage>
+where:
+    -s | --stage        stage for deployment (required)
+    -h | --help         show this help text"
+
+while [ $# -gt 0 ]; do
+    if [[ $1 =~ "--"* ]]; then
+        case $1 in
+            --help|-h) echo "$usage"; exit; ;;
+            --stage|-s) STAGE=$2;;
+        esac
+    fi
+    shift
+done
+
+SERVICE_STACK_STACK="serverless-aurora-graphql-starter-$STAGE"
+BASTION_STACK="$SERVICE_STACK_STACK-bastion"
+
+echo "START: Remote Stop Delete Stack"
+# HACK: AWS_PAGER="" -- Container does not have 'less'
+AWS_PAGER="" aws cloudformation delete-stack --stack "$BASTION_STACK"
+echo "DONE: Remote Stop Delete Stack"
+
+echo "START: Remote Stop wait stack-delete-complete"
+aws cloudformation wait stack-delete-complete --stack "$BASTION_STACK"
+echo "DONE: Remote Stop wait stack-delete-complete"

@@ -1,0 +1,25 @@
+steps:
+  - label: "Staging"
+    trigger: "serverless-aurora-graphql-starter-deploy"
+    build:
+      commit: "$BUILDKITE_COMMIT"
+      message: "$BUILDKITE_MESSAGE"
+      branch: "$BUILDKITE_BRANCH"
+      env:
+        AWS_REGION: "us-east-1"
+        AWS_DEFAULT_REGION: "us-east-1"
+        AWS_ACCOUNT_ID: "910215414343"
+        ROLE_ARN: arn:aws:iam::910215414343:role/buildkite
+        STAGE: "staging"
+  - label: "Production"
+    trigger: "serverless-aurora-graphql-starter-deploy"
+    build:
+      commit: "$BUILDKITE_COMMIT"
+      message: "$BUILDKITE_MESSAGE"
+      branch: "$BUILDKITE_BRANCH"
+      env:
+        AWS_REGION: "us-east-1"
+        AWS_DEFAULT_REGION: "us-east-1"
+        AWS_ACCOUNT_ID: "910215414343"
+        ROLE_ARN: arn:aws:iam::910215414343:role/buildkite
+        STAGE: "production"
