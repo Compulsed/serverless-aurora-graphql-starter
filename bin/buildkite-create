@@ -3,7 +3,7 @@ set -euo pipefail
 
 function merge_pipeline() {
   local pipeline="serverless-aurora-graphql-starter-merge"
-  local command="buildkite-agent pipeline upload ./backend/.buildkite/merge.yml"
+  local command="buildkite-agent pipeline upload ./.buildkite/merge.yml"
   local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
   local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
 
@@ -34,7 +34,7 @@ function merge_pipeline() {
 
 function deploy_pipeline() {
   local pipeline="serverless-aurora-graphql-starter-deploy"
-  local command="buildkite-agent pipeline upload ./backend/.buildkite/deploy.yml"
+  local command="buildkite-agent pipeline upload ./.buildkite/deploy.yml"
   local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
   local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
 
@@ -61,7 +61,7 @@ function deploy_pipeline() {
 
 function pr_pipeline() {
   local pipeline="serverless-aurora-graphql-starter-pr"
-  local command="buildkite-agent pipeline upload ./backend/.buildkite/pr.yml"
+  local command="buildkite-agent pipeline upload ./.buildkite/pr.yml"
   local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
   local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
 
