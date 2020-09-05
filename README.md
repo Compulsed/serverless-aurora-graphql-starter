@@ -18,6 +18,22 @@
 * Oprah (For managing secrets & credentials)
 * Cloudformation template for a temporarily spinning up a bastion host
 
+## Features of starter
+
+* Performance
+    * Lambdas do not exist inside of VPC, uses DataAPI to reduce cold starts
+* SQL Database helpers
+    * Seeding / Migrations support
+    * Postgres Aurora has good JSONB support for being able to story and query arbitrary JSON data like DDB 
+* Cost savings 
+    * Serverless Aurora will automatically shut off after 5 minutes in non-production environments
+    * Bastion hosts will deleted once they are being used
+    * All Serverless resources, low cost when not using
+
+<br />
+<br />
+<br />
+
 # Setting up locally
 
 Installl the following dependencies as they will bre required to deploy the solution:
