@@ -1,4 +1,4 @@
-# ⚡☁ Serverless Aurora GraphQL Starter (Pre-release) ⚡☁
+# ⚡☁ Serverless Aurora GraphQL Starter (Alpha) ⚡☁
 
 **This is currently still actively being built out, it is recommended for you to read and understand all of the code before using it in production**
 
@@ -26,9 +26,9 @@ Installl the following dependencies as they will bre required to deploy the solu
 * Direnv
 * Postgres client
 
-# Should add more information about
+## Should add more information about
 - Configuring Oprah for secrets
-
+- Stack layout and deployment ordering
 
 ### Challenges:
 

@@ -10,5 +10,6 @@ config:
 
   defaults:
     AURORA_AUTO_PAUSE: "true"
-    DATABASE_NAME: "serverless-aurora"
+    DATABASE_NAME: "serverlessaurora"  # rds requires alphanumeric database names
+    DATABASE_USER: "serverlessaurora"
     FRONTEND_AUTH_SECRET: "secret" # This should be moved to a 'required' oprah value because secrets should not be in source!

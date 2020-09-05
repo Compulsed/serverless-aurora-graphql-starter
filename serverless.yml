@@ -47,8 +47,8 @@ custom:
   RDS:
     clusterIdentifierName: ${self:provider.stackName}-aurora-cluster
     clusterDatabaseSecretName: ${self:custom.RDS.clusterIdentifierName}-secret
-    databaseName: ${self:service} # rds requires alphanumeric database names
-    databaseUser: ${self:service}
+    databaseName: ${ssm:/${self:provider.configPath}/DATABASE_NAME }
+    databaseUser: ${ssm:/${self:provider.configPath}/DATABASE_USER }
   GraphQL:
     path: "/graphql"
   Network:
