@@ -1,6 +1,6 @@
 steps:
   - label: "Staging"
-    trigger: "serverless-aurora-graphql-starter-deploy"
+    trigger: "serverless-aurora-deploy"
     build:
       commit: "$BUILDKITE_COMMIT"
       message: "$BUILDKITE_MESSAGE"
@@ -12,7 +12,7 @@ steps:
         ROLE_ARN: arn:aws:iam::910215414343:role/buildkite
         STAGE: "staging"
   - label: "Production"
-    trigger: "serverless-aurora-graphql-starter-deploy"
+    trigger: "serverless-aurora-deploy"
     build:
       commit: "$BUILDKITE_COMMIT"
       message: "$BUILDKITE_MESSAGE"

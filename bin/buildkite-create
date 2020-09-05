@@ -2,7 +2,7 @@
 set -euo pipefail
 
 function merge_pipeline() {
-  local pipeline="serverless-aurora-graphql-starter-merge"
+  local pipeline="serverless-aurora-merge"
   local command="buildkite-agent pipeline upload ./.buildkite/merge.yml"
   local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
   local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
@@ -33,7 +33,7 @@ function merge_pipeline() {
 }
 
 function deploy_pipeline() {
-  local pipeline="serverless-aurora-graphql-starter-deploy"
+  local pipeline="serverless-aurora-deploy"
   local command="buildkite-agent pipeline upload ./.buildkite/deploy.yml"
   local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
   local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
@@ -60,7 +60,7 @@ function deploy_pipeline() {
 }
 
 function pr_pipeline() {
-  local pipeline="serverless-aurora-graphql-starter-pr"
+  local pipeline="serverless-aurora-pr"
   local command="buildkite-agent pipeline upload ./.buildkite/pr.yml"
   local method=$([ "$ACTION" == "create" ] && echo "POST" || echo "PATCH")
   local urlPrefix=$([ "$ACTION" == "create" ] && echo "pipelines" || echo "pipelines/${pipeline}")
@@ -94,7 +94,7 @@ function pr_pipeline() {
   }' | jq
 }
 
-SERVICE="serverless-aurora-graphql-starter"
+SERVICE="serverless-aurora"
 REPO=""
 BUILDKITE_TOKEN=""
 ACTION=""
@@ -103,7 +103,7 @@ usage="USAGE: $(basename "$0")
 where:
     -a | --ACTION       'create' or 'update' (required)
     -t | --token        buildkite token (required) 
-    -r | --REPO         git repository (required) eg. git@github.com:Compulsed/serverless-aurora-graphql-starter.git
+    -r | --REPO         git repository (required) eg. git@github.com:Compulsed/serverless-aurora.git
     -h | --help         show this help text"
 
 while [ $# -gt 0 ]; do
@@ -126,6 +126,6 @@ echo "🎉 Done action"
 
 if [[ $ACTION == "create" ]]; then
     echo "Next steps - Integrate the Web Hook into the Merge and PR pipelines"
-    echo "- https://buildkite.com/dale-salter/serverless-aurora-graphql-starter-merge/settings/setup/github"
-    echo "- https://buildkite.com/dale-salter/serverless-aurora-graphql-starter-pr/settings/setup/github"
+    echo "- https://buildkite.com/dale-salter/serverless-aurora-merge/settings/setup/github"
+    echo "- https://buildkite.com/dale-salter/serverless-aurora-pr/settings/setup/github"
 fi

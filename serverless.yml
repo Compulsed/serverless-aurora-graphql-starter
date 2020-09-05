@@ -1,13 +1,13 @@
 service:
-  name: serverless-aurora-graphql-starter
+  name: serverless-aurora
 
 provider:
   name: aws
   runtime: nodejs12.x
   stackName: ${self:service}-${self:provider.stage}
   stage: ${opt:stage}
-  configPath: ${opt:stage}/serverless-aurora-graphql-starter/config
-  secretPath: ${opt:stage}/serverless-aurora-graphql-starter/secret
+  configPath: ${opt:stage}/serverless-aurora/config
+  secretPath: ${opt:stage}/serverless-aurora/secret
   region: ${env:AWS_REGION}
   iamRoleStatements:
     - Sid: 'SecretsManagerDbCredentialsAccess'

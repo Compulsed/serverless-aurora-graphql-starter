@@ -21,11 +21,5 @@
     "oprah": "^3.0.1",
     "serverless": "^1.45.0",
     "serverless-offline": "^4.9.4"
-  },
-  "scripts": {
-    "dev": "sls offline --stage dev",
-    "deploy-production": "npm install && /bin/bash ./bin/permissions && ./bin/deploy --stage production",
-    "deploy-test": "npm install && /bin/bash ./bin/permissions && ./bin/deploy --stage test",
-    "deploy-dev": "npm install && /bin/bash ./bin/permissions && ./bin/deploy --stage dev"
   }
 }

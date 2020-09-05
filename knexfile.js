@@ -7,7 +7,7 @@ module.exports = {
     connection: async (arg1) => {       
         const parameterResponse = await (new AWS.SSM()).getParameters({
             Names: [
-                `/${process.env.STAGE}/serverless-aurora-graphql-starter/config/DATABASE_NAME`,
+                `/${process.env.STAGE}/serverless-aurora/config/DATABASE_NAME`,
             ]
         })
         .promise();
@@ -17,7 +17,7 @@ module.exports = {
         const { Value: databaseName } = databaseNameResponse;
 
         var cfParams = {
-            StackName: `serverless-aurora-graphql-starter-${process.env.STAGE}`
+            StackName: `serverless-aurora-${process.env.STAGE}`
         };
         
         const { Stacks } = await (new AWS.CloudFormation())

@@ -23,7 +23,7 @@ if [ -z "${STAGE}" ]; then
       exit 1;
 fi
 
-SERVICE_STACK_STACK="serverless-aurora-graphql-starter-$STAGE"
+SERVICE_STACK_STACK="serverless-aurora-$STAGE"
 BASTION_EC2_KEY_STACK="$SERVICE_STACK_STACK-bastion-ec2key"
 BASTION_STACK="$SERVICE_STACK_STACK-bastion"
 

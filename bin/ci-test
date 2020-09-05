@@ -38,8 +38,8 @@ cleanup() {
   # TODO: Oprah value delete
   echo "START: Oprah Delete"
   # HACK: AWS_PAGER="" -- Container does not have 'less'
-  cat "/tmp/oprah-exports.json" | jq ".configs | keys[]" | xargs -I % sh -c "AWS_PAGER="" aws ssm delete-parameter --name /$TEST_STAGE/serverless-aurora-graphql-starter/config/%";
-  cat "/tmp/oprah-exports.json" | jq ".secrets | keys[]" | xargs -I % sh -c "AWS_PAGER="" aws ssm delete-parameter --name /$TEST_STAGE/serverless-aurora-graphql-starter/secret/%";
+  cat "/tmp/oprah-exports.json" | jq ".configs | keys[]" | xargs -I % sh -c "AWS_PAGER="" aws ssm delete-parameter --name /$TEST_STAGE/serverless-aurora/config/%";
+  cat "/tmp/oprah-exports.json" | jq ".secrets | keys[]" | xargs -I % sh -c "AWS_PAGER="" aws ssm delete-parameter --name /$TEST_STAGE/serverless-aurora/secret/%";
   echo "Done: Oprah Delete"
 }
 trap cleanup 0
@@ -67,7 +67,7 @@ trap 'error ${LINENO}' ERR
 yarn oprah export -s "$STAGE"
 
 TEST_STAGE="$STAGE-$BUILDKITE_BUILD_NUMBER"
-TEST_STACK="serverless-aurora-graphql-starter-$TEST_STAGE"
+TEST_STACK="serverless-aurora-$TEST_STAGE"
 
 yarn oprah import -s "$TEST_STAGE"
 

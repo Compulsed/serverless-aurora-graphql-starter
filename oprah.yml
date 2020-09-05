@@ -1,13 +1,14 @@
-service: serverless-aurora-graphql-starter
+service: serverless-aurora
 provider:
   name: ssm
 
 config:
-  path: /${stage}/serverless-aurora-graphql-starter/config
+  path: /${stage}/serverless-aurora/config
 
   production:
     AURORA_AUTO_PAUSE: "false"
 
   defaults:
     AURORA_AUTO_PAUSE: "true"
-    DATABASE_NAME: "serverless-aurora-graphql-starter"
+    DATABASE_NAME: "serverless-aurora"
+    FRONTEND_AUTH_SECRET: "secret" # This should be moved to a 'required' oprah value because secrets should not be in source!

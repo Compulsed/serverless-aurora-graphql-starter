@@ -4,7 +4,7 @@ steps:
     agents:
       queue: default
     concurrency: 1
-    concurrency_group: "serverless-aurora-graphql-starter-deploy-${STAGE}"
+    concurrency_group: "serverless-aurora-deploy-${STAGE}"
     plugins:
       - cultureamp/aws-assume-role#v0.1.0:
           role: "$ROLE_ARN"

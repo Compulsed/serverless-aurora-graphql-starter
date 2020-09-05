@@ -18,7 +18,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-SERVICE_STACK_STACK="serverless-aurora-graphql-starter-$STAGE"
+SERVICE_STACK_STACK="serverless-aurora-$STAGE"
 BASTION_STACK="$SERVICE_STACK_STACK-bastion"
 
 echo "START: Remote Stop Delete Stack"
