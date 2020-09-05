@@ -93,7 +93,7 @@ GRAPHQL_URL=$(aws cloudformation describe-stacks --stack-name "$TEST_STACK" --qu
 curl --request POST \
   --url "$GRAPHQL_URL" \
   --header 'content-type: application/json' \
-  --data '{"query":"query {\n hello }\n}"}'
+  --data '{"query":"query { hello } "}'
 echo "END: Running API Test"
 
 echo "🎉 Done! 🎉"
