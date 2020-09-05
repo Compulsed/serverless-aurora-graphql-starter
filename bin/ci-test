@@ -87,17 +87,13 @@ echo "START: Running Seeding"
 STAGE=$TEST_STAGE yarn knex seed:run
 echo "END: Running Seeding"
 
-echo "START: Backfill"
-yarn sls invoke local -f pipelines -s "$TEST_STAGE" --data "{}"
-echo "END: Backfill"
-
 echo "START: Running API Test"
 GRAPHQL_URL=$(aws cloudformation describe-stacks --stack-name "$TEST_STACK" --query "Stacks[0].Outputs[?OutputKey=='GraphQLUrl'].OutputValue" --output text)
 
 curl --request POST \
   --url "$GRAPHQL_URL" \
   --header 'content-type: application/json' \
-  --data '{"query":"query {\n  users {\n    email\n    first_name\n    last_name\n  }\n}"}'
+  --data '{"query":"query {\n hello }\n}"}'
 echo "END: Running API Test"
 
 echo "🎉 Done! 🎉"
