@@ -18,7 +18,7 @@
 * Oprah (For managing secrets & credentials)
 * Cloudformation template for a temporarily spinning up a bastion host
 
-## Setting up locally
+# Setting up locally
 
 Installl the following dependencies as they will bre required to deploy the solution:
 * ASDF
@@ -26,11 +26,20 @@ Installl the following dependencies as they will bre required to deploy the solu
 * Direnv
 * Postgres client
 
+# Project specific changes
+
 ## Should add more information about
 - Configuring Oprah for secrets
 - Stack layout and deployment ordering
+- Why VPC / Database was defined in Serverless.yml vs another file (simplicity)
 
-### Challenges:
+## Improvements
+- Clean up unused dependencies
+- Improve how logging is done
+- Consider automatic CloudWatch dashboard generation
+- Be more specific about the differences between using Knex & Data API
+
+### Challenges with existing solution:
 
 Data API Client:
 - Must use ::uuid and ::jsonb because postgres inference does not work when using parameterised values
