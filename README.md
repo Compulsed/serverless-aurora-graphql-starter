@@ -18,6 +18,9 @@
 
 *This project aims to (in-whole or in-part) be drop in starter for your new project OR be a place where you can get some inspiration for how you **might** do Serverless SQL 🎉*
 
+<br />
+<br />
+
 ## Technologies used in this starter
 
 * Serverless Framework (w/ Serverless offline)
