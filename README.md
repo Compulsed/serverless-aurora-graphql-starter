@@ -39,7 +39,7 @@ Installl the following dependencies as they will bre required to deploy the solu
 - [ ] Consider automatic CloudWatch dashboard generation
 - [ ] Be more specific about the differences between using Knex & Data API
 - [ ] Adding in testing (jest)
-- [ ] dding in linting
+- [ ] Adding in linting
 
 ### Challenges with existing solution:
 
