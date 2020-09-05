@@ -1,4 +1,4 @@
-# ⚡☁ Serverless Aurora GraphQL Starter (Alpha) ⚡☁
+# ⚡☁ Serverless Aurora GraphQL Starter ⚡☁
 
 [![Build status](https://badge.buildkite.com/664e64d34cc008fa649f345595c0fe2276d83e29fe0ec045d7.svg)](https://buildkite.com/dale-salter/serverless-aurora-merge)
 
