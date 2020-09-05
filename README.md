@@ -33,6 +33,8 @@
 * Oprah (For managing secrets & credentials)
 * Cloudformation template for a temporarily spinning up a bastion host
 
+<br />
+
 ## Features of starter
 
 * Performance
@@ -45,8 +47,6 @@
     * Bastion hosts will deleted once they are being used
     * All Serverless resources, low cost when not using
 
-<br />
-<br />
 <br />
 
 ## Setting up locally
