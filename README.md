@@ -57,6 +57,8 @@ Installl the following dependencies as they will bre required to deploy the solu
 * Direnv
 * Postgres client
 
+<br />
+
 ### Important Limitations of this starter:
 
 Data API Client:
@@ -72,6 +74,8 @@ Values still required as env:
 - AWS_ACCOUNT_ID
 - AWS_REGION
 - AWS_PROFILE
+
+<br />
 
 ## Improvementes
 Read the IMPROVEMENTS.md to look at what improvements to this starter are still to be made
