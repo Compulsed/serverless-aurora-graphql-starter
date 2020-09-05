@@ -14,19 +14,18 @@
 * ASDF (Version management, node, jq, yarn)
 * Direnv (Managing multiple environments)
 * Oprah (For managing secrets & credentials)
+* Cloudformation template for a temporarily spinning up a bastion host
 
-## Problems this starter attempts to address
+## Setting up locally
 
-* Spinning up / down a bastion host to directly connect into your Serverless Aurora instance (w/ SSH keys stored in SSM)
-* Ability to have each stage of your project in a single or multiple AWS accounts (preference with being in multiple accounts for security)
-* 
-
-## Set up locally
-
-### Code Requirements
+Installl the following dependencies as they will bre required to deploy the solution:
 * ASDF
-* JQ
 * AWS Cli
+* Direnv
+* Postgres client
+
+
+
 
 ### Challenges:
 
