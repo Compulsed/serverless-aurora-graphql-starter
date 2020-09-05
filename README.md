@@ -49,33 +49,93 @@
 
 <br />
 
-## Setting up locally
+## Setting up
 
-Installl the following dependencies as they will bre required to deploy the solution:
-* ASDF
-* AWS Cli
-* Direnv
-* Postgres client
+**Step 1 - Setting up starter**
+
+Clone the repository down, and then find & replace any usage of the word `serverless-aurora` with your own service name eg. `image-serivce`. This service name will be used in multiple places as it will be your, cloudformation, database, database user name. It will be hard to change later.
 
 <br />
 
-### Important Limitations of this starter:
+**Step 2 - Download dependencies**
 
-Data API Client:
-- Must use ::uuid and ::jsonb because postgres inference does not work when using parameterised values
-- Where In (array) is not supported yet: http://knexjs.org/#Utility-BatchInsert
-- No migrations functionality
- 
-Knex w/ Data API Client issues:
-- Must use 'raw' when doing upserting, as this is specific to DDB providers and has not been implemented yet
-- Unknown how to successfully do batchInserts (http://knexjs.org/#Utility-BatchInsert), as it requires a transaction
+All of the required dependencies are defined within the `Dockerfile` which you can use if your CI system supports docker. The project should either be able to run on MacOS / Linux or Windows (WSL) without any modifications.
 
-Values still required as env:
-- AWS_ACCOUNT_ID
-- AWS_REGION
-- AWS_PROFILE
+Install the following dependencies as they will bre required to deploy the solution. You could install these yourself or use the recommended approach:
+* ASDF ([Installation Guide](https://asdf-vm.com/#/core-manage-asdf-vm)) 
+* AWS CLI ([Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html))
+* Postgres client (`sudo apt-get install postgresql` or `brew install postgres`)
+
+Once everything has been downloaded and installed, install the ASDF plugins to install the various runtimes which are needed:
+
+```
+asdf plugin-add nodejs
+asdf plugin-add yarn
+asdf plugin-add python
+asdf plugin-add jq
+asdf plugin-add direnv
+asdf install
+```
+
+You should at this point have access to everything you need and can validate that by running `which nodejs`, `which yarn`, etc.
 
 <br />
 
-## Improvementes
-Read the IMPROVEMENTS.md to look at what improvements to this starter are still to be made
+**Step 3 - Configure Direnv**
+
+Direnv is a mechanism for being able to switch in and out your environment variables. This starter expects by default expects you to define an `.env.dev` (based on what is in the `.envrc` file). Create a `.env.dev` in the root of the repository, replace what is below with your values.
+
+```
+STAGE=dev                    # Stage name, expects `dev`, `staging`, `production`
+AWS_PROFILE=starter          # AWS Profile you will deploy with, should point to same account as the AWS_ACCOUNT_ID
+AWS_REGION=us-east-1         # Your AWS Region
+AWS_DEFAULT_REGION=us-east-1 # Your AWS Region
+AWS_ACCOUNT_ID=999999999999  # Your AWS account ID you are deploying this to
+AWS_SDK_LOAD_CONFIG=1
+```
+
+You can set one up for `.env.staging` or `.env.production`. When you set up a CI environment you will also need to define the below environment variables there.
+
+<br />
+
+**Step 4 - Deploying**
+
+Install your JavaScript dependencies with a `yarn`.
+
+Once installed you can run `./bin/ci-deploy -s dev`. This will:
+
+- Configure SSM with default values using the `oprah` command
+- Perform a `serverless deploy`
+- Start up your bastion host with `aws cli`
+- Run any migrations / seed the database with `knex`
+- Stop the bastion host so it does not cost you $ (we only need it for running the database migration & seeding)
+
+As this point you should have the sample project fully running 🎉 and you can use the `./bin/ci-deploy -s dev` on CI to do staging & production deployments.
+
+<br />
+
+**Step 5 - Developing**
+
+**Note: When Serverless Aurora is not being used it is put to sleep. It takes ~24 seconds for aurora to wake up. So your first couple of requests might be slow or timeout.**
+
+Now that you have everything set up, you are in a place where you can start iterating and adding features.
+
+General commands:
+- `./bin/offline -s dev` - Sets up a Serverless Offline API for you to be able to iterate on code. You can use something like [Insomnia](https://insomnia.rest/) to test the API as you change the code. 
+- `yarn sls info -s dev` - Prints out the API Gateway URL for your lambda functions running in the cloud
+- `yarn sls deploy -s dev` - Just deploys changes to just the Serverless stack (your new code)
+
+Adding new environment variables:
+- `yarn oprah -s dev -i` - Allows you to add additional values to SSM if there are any changes to the `oprah.yml`
+
+Updating or changing the database:
+- `remote-start -s dev` - To bring up the bastion host with an SSH tunnel. Required to run the next couple of commands (and `remote-stop -s dev`) to turn the host to so that you save 💸
+- `yarn knex seed:run` - Seeds the database with dummy data based on the scripts in the `seeds/` directory
+- `yarn knex migrate:make post-status` - Creates a new migration
+- `yarn knex migrate:up` - Brings you database to the latest version
+- `./bin/remote-connect -s dev` - Similar to `remote-start -s dev` but will print our crentials you can use to connect into your database using an SQL client like [TablePlus](https://tableplus.com/)
+
+<br />
+
+## Improvementes to this starter
+Read the [IMPROVEMENTS.md](https://github.com/Compulsed/serverless-aurora-graphql-starter/blob/master/IMPROVEMENTS.md) to look at what improvements to this starter are still to be made.

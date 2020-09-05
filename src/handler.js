@@ -1,10 +1,9 @@
 const { ApolloServer, gql } = require('apollo-server-lambda');
 const _ = require('lodash');
-const { query } = require('./tools/dataApiClient');
 const AWS = require('aws-sdk');
-const { v4: uuidv4 } = require('uuid');
 
-const s3 = new AWS.S3();
+// Wrapper for: https://github.com/jeremydaly/data-api-client
+const { query } = require('./tools/dataApiClient');
 
 const typeDefs = gql`
     type Post {

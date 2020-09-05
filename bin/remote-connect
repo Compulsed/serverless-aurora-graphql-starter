@@ -1,0 +1,62 @@
+#!/bin/bash
+set -euo pipefail
+
+STAGE=""
+
+usage="USAGE: $(basename "$0") [-s|--stage] <stage>
+where:
+    -s | --stage        stage for deployment (required)
+    -h | --help         show this help text"
+
+while [ $# -gt 0 ]; do
+    if [[ $1 =~ "--"* ]]; then
+        case $1 in
+            --help|-h) echo "$usage"; exit; ;;
+            --stage|-s) STAGE=$2;;
+        esac
+    fi
+    shift
+done
+
+if [ -z "${STAGE}" ]; then
+      echo "Missing stage";
+      exit 1;
+fi
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Start Bastion Host
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
+echo "START: Remote Start"
+./bin/remote-start -s "$STAGE"
+echo "END: Remote Start"
+
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+#
+# FUNCTION: Print Connection Credentials
+#
+###~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~##
+
+
+SERVICE_STACK_STACK="serverless-aurora-$STAGE"
+BASTION_EC2_KEY_STACK="$SERVICE_STACK_STACK-bastion-ec2key"
+BASTION_STACK="$SERVICE_STACK_STACK-bastion"
+
+
+BASTION_PUBLIC_DNS_NAME=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='BastionPublicDnsName'].OutputValue" --output text)
+DATABASE_HOST_NAME=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='DatabaseHostName'].OutputValue" --output text)
+DATABASE_PORT=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='DatabasePort'].OutputValue" --output text)
+DATABASE_SECRET_ARN=$(aws cloudformation describe-stacks --stack-name "$BASTION_STACK" --query "Stacks[0].Outputs[?OutputKey=='DatabaseSecretArn'].OutputValue" --output text)
+DATABASE_SECRET=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_SECRET_ARN" | jq --raw-output .SecretString | jq -r ."password" )
+DATABASE_USERNAME=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_SECRET_ARN" | jq --raw-output .SecretString | jq -r ."username" )
+DATABASE_DATABASE_NAME=$(aws secretsmanager get-secret-value --secret-id "$DATABASE_SECRET_ARN" | jq --raw-output .SecretString | jq -r ."dbname" )
+
+echo "=========================================="
+echo "-> Host Name: localhost"
+echo "-> Port:      5433"
+echo "-> User:      $DATABASE_USERNAME"
+echo "-> Password:  $DATABASE_SECRET"
+echo "-> Database:  $DATABASE_DATABASE_NAME"
+echo "=========================================="

@@ -4,6 +4,7 @@ const { getDatabaseSecretArn } = require('./getDatabaseSecretArn');
 const makedataAPIClient = async () => {
     const databaseSecretARN = await getDatabaseSecretArn();
 
+    // https://github.com/jeremydaly/data-api-client -- for documentation
     return require('data-api-client')({
         secretArn: databaseSecretARN, 
         resourceArn: process.env.DB_ARN,

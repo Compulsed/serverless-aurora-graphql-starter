@@ -13,3 +13,7 @@ config:
     DATABASE_NAME: "serverlessaurora"  # rds requires alphanumeric database names
     DATABASE_USER: "serverlessaurora"
     FRONTEND_AUTH_SECRET: "secret" # This should be moved to a 'required' oprah value because secrets should not be in source!
+
+  # Uncomment for 'required values', which are values that you get prompted for on the command line so you do not need to store them in source control
+  # required:
+  #   FRONTEND_AUTH_SECRET: ""    
