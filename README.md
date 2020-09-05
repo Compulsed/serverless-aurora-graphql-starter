@@ -34,7 +34,7 @@
 <br />
 <br />
 
-# Setting up locally
+## Setting up locally
 
 Installl the following dependencies as they will bre required to deploy the solution:
 * ASDF
@@ -42,22 +42,7 @@ Installl the following dependencies as they will bre required to deploy the solu
 * Direnv
 * Postgres client
 
-# Project specific changes
-
-## Should add more information about
-- Configuring Oprah for secrets
-- Stack layout and deployment ordering
-- Why VPC / Database was defined in Serverless.yml vs another file (simplicity)
-
-## Improvements
-- [ ] Clean up unused dependencies
-- [ ] Improve how logging is done
-- [ ] Consider automatic CloudWatch dashboard generation
-- [ ] Be more specific about the differences between using Knex & Data API
-- [ ] Adding in testing (jest)
-- [ ] Adding in linting
-
-### Challenges with existing solution:
+### Important Limitations of this starter:
 
 Data API Client:
 - Must use ::uuid and ::jsonb because postgres inference does not work when using parameterised values
@@ -72,3 +57,6 @@ Values still required as env:
 - AWS_ACCOUNT_ID
 - AWS_REGION
 - AWS_PROFILE
+
+## Improvementes
+Read the IMPROVEMENTS.md to look at what improvements to this starter are still to be made
