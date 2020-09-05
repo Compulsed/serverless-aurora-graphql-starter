@@ -18,7 +18,7 @@
 
 *This project aims to (in-whole or in-part) be drop in starter for your new project OR be a place where you can get some inspiration for how you **might** do Serverless SQL 🎉*
 
-Currently I use this starter to run my Blog ([Blog](https://dalejsalter.com/) [GitHub](https://github.com/Compulsed/blog)). If you want to learn about Serverless be sure to follow that, or me on [Twitter](https://twitter.com/enepture).
+Currently I use this starter to run my Blog ([https://dalejsalter.com](https://dalejsalter.com/), which is hosted [GitHub](https://github.com/Compulsed/blog)). If you want to learn about Serverless be sure to follow that, or me on [Twitter](https://twitter.com/enepture).
 
 <br />
 <br />
