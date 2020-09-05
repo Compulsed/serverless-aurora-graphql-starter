@@ -9,7 +9,7 @@ steps:
       - cultureamp/aws-assume-role#v0.1.0:
           role: "$ROLE_ARN"
       - docker-compose#v3.1.0:
-          run: backend
+          run: api
           env:
             - AWS_ACCESS_KEY_ID
             - AWS_SECRET_ACCESS_KEY
