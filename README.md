@@ -61,25 +61,26 @@ Clone the repository down, and then find & replace any usage of the word `server
 
 **Step 2 - Download dependencies**
 
-All of the required dependencies are defined within the `Dockerfile` which you can use if your CI system supports docker. The project should either be able to run on MacOS / Linux or Windows (WSL) without any modifications.
+This project depends on: `aws-cli`, `psql` (apart of postgres package), `nodejs`, `yarn`, `python`, `direnv` & `jq` to run. If you already have these dependencies or know how to install them skip to **Step 3**. 
 
-Install the following dependencies as they will bre required to deploy the solution. You could install these yourself or use the recommended approach:
-* ASDF ([Installation Guide](https://asdf-vm.com/#/core-manage-asdf-vm)) 
-* AWS CLI ([Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html))
-* Postgres client (`sudo apt-get install postgresql` or `brew install postgres`)
-
-Once everything has been downloaded and installed, install the ASDF plugins to install the various runtimes which are needed:
+ASDF can manage most of these dependencies for you and pin them to the specific versions needed for the project. ([Installation Guide](https://asdf-vm.com/#/core-manage-asdf-vm)) 
 
 ```
-asdf plugin-add nodejs
+asdf plugin-add nodejs  # Follow: https://github.com/asdf-vm/asdf-nodejs as it may require additional steps
 asdf plugin-add yarn
-asdf plugin-add python
+asdf plugin-add python  # Follow: https://github.com/danhper/asdf-python as it may require additional steps
 asdf plugin-add jq
-asdf plugin-add direnv
+asdf plugin-add direnv 
 asdf install
 ```
 
-You should at this point have access to everything you need and can validate that by running `which nodejs`, `which yarn`, etc.
+You should at this point have access to everything you need and can validate that by running `which nodejs`, `which yarn`, `which jq`, `which direnv`, `which python` etc.
+
+ASDF does not have a way to manage the AWS CLI or Postgres, you can these install through the following steps
+* AWS CLI ([Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html))
+* Postgres client (`sudo apt-get install postgresql` or `brew install postgres`)
+
+*Note: All of the required dependencies are defined within the `Dockerfile` which you can use if your CI system supports docker.*
 
 <br />
 
