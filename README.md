@@ -24,7 +24,8 @@ Installl the following dependencies as they will bre required to deploy the solu
 * Direnv
 * Postgres client
 
-
+# Should add more information about
+- Configuring Oprah for secrets
 
 
 ### Challenges:

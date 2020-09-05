@@ -11,6 +11,3 @@ config:
   defaults:
     AURORA_AUTO_PAUSE: "true"
     DATABASE_NAME: "serverless-aurora-graphql-starter"
-
-  required:
-    FRONTEND_AUTH_SECRET: "Any string which you should enter in the /login/x to auth with backend"
