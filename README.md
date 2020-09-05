@@ -2,6 +2,16 @@
 
 [![Build status](https://badge.buildkite.com/664e64d34cc008fa649f345595c0fe2276d83e29fe0ec045d7.svg)](https://buildkite.com/dale-salter/serverless-aurora-merge)
 
+<br />
+<br />
+
+<p align="center">
+    <img alt="Serverless Aurora GraphQL Starter" src="https://raw.githubusercontent.com/Compulsed/serverless-aurora-graphql-starter/master/image/logo.png" width="546">
+</p>
+
+<br />
+<br />
+
 **This is currently still actively being built out, it is recommended for you to read and understand all of the code before using it in production**
 
 *Serverless is about quickly building solutions without spending time a lot of on building out & maintaining infrastructure. It still can take a **really long** time to get all these serverless technologies configured and properly working together, this is where the Serverless Aurora GraphQL Starter comes in.*
