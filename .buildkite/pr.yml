@@ -4,6 +4,7 @@
       queue: default
     env:
       AWS_REGION: "us-east-1"
+      AWS_DEFAULT_REGION: "us-east-1"
       AWS_ACCOUNT_ID: "910215414343"
       BUILDKITE_BUILD_NUMBER: ${BUILDKITE_BUILD_NUMBER}
       ROLE_ARN: "arn:aws:iam::910215414343:role/buildkite"
@@ -19,6 +20,7 @@
             - AWS_SECRET_ACCESS_KEY
             - AWS_SESSION_TOKEN
             - AWS_REGION
+            - AWS_DEFAULT_REGION
             - AWS_ACCOUNT_ID
             - BUILDKITE_BUILD_NUMBER
             - STAGE
