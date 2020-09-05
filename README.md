@@ -60,3 +60,5 @@ Values still required as env:
 
 ## Improvementes
 Read the IMPROVEMENTS.md to look at what improvements to this starter are still to be made
+
+...
