@@ -1,6 +1,8 @@
-# ⚡☁ Serverless Aurora GraphQL Starter ⚡☁
+# ⚡☁ Serverless Aurora GraphQL Starter (Pre-release) ⚡☁
 
-*Serverless is about quickly building solutions without spending time on building out infrastructure. It still can take a **really long** time to get all these servleress technologies configured and properly working together, this is where the Serverless Aurora GraphQL Starter comes in.*
+**This is currently still actively being built out, it is recommended for you to read and understand all of the code before using it in production**
+
+*Serverless is about quickly building solutions without spending time a lot of on building out & maintaining infrastructure. It still can take a **really long** time to get all these serverless technologies configured and properly working together, this is where the Serverless Aurora GraphQL Starter comes in.*
 
 *This project aims to (in-whole or in-part) be drop in starter for your new project OR be a place where you can get some inspiration for how you **might** do Serverless SQL 🎉*
 
