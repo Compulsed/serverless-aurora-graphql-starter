@@ -6,7 +6,7 @@ config:
   path: /${stage}/serverless-aurora/config
 
   production:
-    AURORA_AUTO_PAUSE: "false"
+    AURORA_AUTO_PAUSE: "true" # Override to "false" to turn off autopausing"
 
   defaults:
     AURORA_AUTO_PAUSE: "true"
