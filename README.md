@@ -40,14 +40,14 @@ Currently I use this starter to run my Blog ([https://dalejsalter.com](https://d
 ## Features of starter
 
 * Performance
-    * Lambdas do not exist inside of VPC, uses DataAPI to reduce cold starts
+    * Lambdas do not exist inside of VPC and uses DataAPI to query Postgres (reduces long cold starts)
 * SQL Database helpers
+    * Postgres Aurora has good JSONB support for being able to story and query arbitrary JSON data like DynamoDB
     * Seeding / Migrations support
-    * Postgres Aurora has good JSONB support for being able to story and query arbitrary JSON data like DDB 
-* Cost savings 
+* Cost savings
     * Serverless Aurora will automatically shut off after 5 minutes in non-production environments
-    * Bastion hosts will deleted once they are being used
-    * All Serverless resources, low cost when not using
+    * Bastion hosts can easily be cleaned up when they are not needed
+    * All Serverless resources, low cost when not using (< $1 USD per month when there is no utilisation)
 
 <br />
 
