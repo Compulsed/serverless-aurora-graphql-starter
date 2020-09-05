@@ -8,16 +8,6 @@
 
 *This project aims to (in-whole or in-part) be drop in starter for your new project OR be a place where you can get some inspiration for how you **might** do Serverless SQL 🎉*
 
-<br />
-<br />
-<br />
-
-<img height="256px" src="https://repository-images.githubusercontent.com/292968605/e83f6380-ef72-11ea-917a-47aab45b8850" />
-
-<br />
-<br />
-<br />
-
 ## Technologies used in this starter
 
 * Serverless Framework (w/ Serverless offline)
