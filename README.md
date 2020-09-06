@@ -63,7 +63,9 @@ Clone the repository down, and then find & replace any usage of the word `server
 
 This project depends on: `aws-cli`, `psql` (apart of postgres package), `nodejs`, `yarn`, `python`, `direnv` & `jq` to run. If you already have these dependencies or know how to install them skip to **Step 3**. 
 
-ASDF can manage most of these dependencies for you and pin them to the specific versions needed for the project. ([Installation Guide](https://asdf-vm.com/#/core-manage-asdf-vm)) 
+ASDF can manage most of these dependencies for you and pin them to the specific versions needed for the project. ([Installation Guide](https://asdf-vm.com/#/core-manage-asdf-vm))
+
+There is two key parts to the asdf install, installing asdf as a dependency and then hooking it into your .bashrc or .zshrc. Make sure you do both otherwise the following will not work correctly.
 
 ```
 asdf plugin-add nodejs  # Follow: https://github.com/asdf-vm/asdf-nodejs as it may require additional steps
@@ -89,15 +91,19 @@ ASDF does not have a way to manage the AWS CLI or Postgres, you can these instal
 Direnv is a mechanism for being able to switch in and out your environment variables. This starter expects by default expects you to define an `.env.dev` (based on what is in the `.envrc` file). Create a `.env.dev` in the root of the repository, replace what is below with your values.
 
 ```
-STAGE=dev                    # Stage name, expects `dev`, `staging`, `production`
-AWS_PROFILE=starter          # AWS Profile you will deploy with, should point to same account as the AWS_ACCOUNT_ID
-AWS_REGION=us-east-1         # Your AWS Region
-AWS_DEFAULT_REGION=us-east-1 # Your AWS Region
-AWS_ACCOUNT_ID=999999999999  # Your AWS account ID you are deploying this to
-AWS_SDK_LOAD_CONFIG=1
+STAGE="dev"                    # Stage name, expects `dev`, `staging`, `production`
+AWS_PROFILE="starter"          # AWS Profile you will deploy with, 
+AWS_ACCOUNT_ID="999999999999"  # Should match where your profile is pointing at
+AWS_REGION="us-east-1"         # Your AWS Region
+AWS_DEFAULT_REGION="us-east-1" # Your AWS Region
+AWS_SDK_LOAD_CONFIG="1"        # Allows you to use ~/.aws/config for managing credentials
 ```
 
 You can set one up for `.env.staging` or `.env.production`. When you set up a CI environment you will also need to define the below environment variables there.
+
+We installed direnv as a part of the asdf installation step. One thing that asdf does not do by default is install a hook into your shell so that it automatically populates your environment when you cd in and out of the solution. Validate that you have direnv installed by running `direnv`. Then follow [this](https://direnv.net/docs/hook.html) to add the hook into your shell.
+
+You should be able to see the above environment variables available within your solution by running `env | grep "AWS"` and seeing those values being populated.
 
 <br />
 
