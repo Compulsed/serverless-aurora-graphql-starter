@@ -91,13 +91,18 @@ ASDF does not have a way to manage the AWS CLI or Postgres, you can these instal
 Direnv is a mechanism for being able to switch in and out your environment variables. This starter expects by default expects you to define an `.env.dev` (based on what is in the `.envrc` file). Create a `.env.dev` in the root of the repository, replace what is below with your values.
 
 ```
-STAGE="dev"                    # Stage name, expects `dev`, `staging`, `production`
-AWS_PROFILE="starter"          # AWS Profile you will deploy with, 
-AWS_ACCOUNT_ID="999999999999"  # Should match where your profile is pointing at
-AWS_REGION="us-east-1"         # Your AWS Region
-AWS_DEFAULT_REGION="us-east-1" # Your AWS Region
-AWS_SDK_LOAD_CONFIG="1"        # Allows you to use ~/.aws/config for managing credentials
+STAGE="dev"
+AWS_PROFILE="starter"
+AWS_ACCOUNT_ID="999999999999"
+AWS_REGION="us-east-1"
+AWS_DEFAULT_REGION="us-east-1"
 ```
+
+- `STAGE` - Stage name, expects `dev`, `staging`, `production`
+- `AWS_PROFILE`- AWS Profile you will deploy with, 
+- `AWS_ACCOUNT_ID` - Should match where your profile is pointing at
+- `AWS_REGION` - Your AWS Region
+- `AWS_DEFAULT_REGION` - Your AWS Region
 
 You can set one up for `.env.staging` or `.env.production`. When you set up a CI environment you will also need to define the below environment variables there.
 
