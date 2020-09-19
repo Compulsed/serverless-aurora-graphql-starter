@@ -1,7 +1,7 @@
 # ⚡☁ Serverless Aurora GraphQL Starter ⚡☁
 
 [![Build status](https://badge.buildkite.com/664e64d34cc008fa649f345595c0fe2276d83e29fe0ec045d7.svg)](https://buildkite.com/dale-salter/serverless-aurora-merge)
-[![Build status](https://img.shields.io/github/license/Compulsed/serverless-aurora-graphql-starter.svg)](https://github.com/Compulsed/serverless-aurora-graphql-starter/blob/master/LICENSE)
+[![Licence](https://img.shields.io/github/license/Compulsed/serverless-aurora-graphql-starter.svg)](https://github.com/Compulsed/serverless-aurora-graphql-starter/blob/master/LICENSE)
 
 
 <br />
@@ -57,13 +57,11 @@ Currently I use this starter to run my Blog ([https://dalejsalter.com](https://d
 
 **Step 1 - Setting up starter**
 
-Clone the repository down, and then find & replace any usage of the word `serverless-aurora` with your own service name eg. `image-serivce`. This service name will be used in multiple places as it will be your, cloudformation, database, database user name. It will be hard to change later.
+Clone the repository down, and then find & replace any usage of the word `serverless-aurora` with your own service name eg. `image-serivce`. This service name will be used in multiple places as it will be your, cloudformation, database, database user name. It will be hard to change later. There is one exception to this, and that is the aurora database name and username. These cannot contain hyphens and must be configured in the `oprah.yml`.
 
 <br />
 
 **Step 2 - Download dependencies**
-
-This project depends on: `aws-cli`, `psql` (apart of postgres package), `nodejs`, `yarn`, `python`, `direnv` & `jq` to run. If you already have these dependencies or know how to install them skip to **Step 3**. 
 
 ASDF can manage most of these dependencies for you and pin them to the specific versions needed for the project. ([Installation Guide](https://asdf-vm.com/#/core-manage-asdf-vm))
 
